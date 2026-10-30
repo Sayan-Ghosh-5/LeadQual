@@ -1,0 +1,15 @@
+version: "1.0"
+name: "Mid-Market Healthcare Software"
+criteria:
+  - id: crit_industry
+    description: "Company operates in the healthcare or health-tech industry."
+    weight: 1.0
+  - id: crit_size
+    description: "Company has between 50 and 500 employees."
+    weight: 0.8
+  - id: crit_tech_stack
+    description: "Company uses Python or Go in their backend infrastructure."
+    weight: 0.6
+  - id: crit_geography
+    description: "Company is headquartered or operating in North America or Europe."
+    weight: 0.4

@@ -1,0 +1,6 @@
+Acme Health is a 200-employee health-tech startup headquartered in
+Boston, Massachusetts. They build patient-management SaaS for
+mid-size hospital networks. Their engineering team uses Python
+(FastAPI) and React on the frontend, deployed on AWS. They recently
+raised a $12M Series A and are expanding into the European market
+with a new office in Berlin.

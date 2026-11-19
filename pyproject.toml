@@ -14,11 +14,19 @@ authors = [{ name = "Your Name", email = "you@example.com" }]
 
 # ── Core dependencies ───────────────────────────────────────────────
 dependencies = [
+    # LLM & config
     "pydantic>=2.0",
     "pydantic-settings",
     "httpx",
     "pyyaml",
     "groq",
+    # Persistence (leads, enrichment runs, verdicts)
+    "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
+    # Retrieval / enrichment
+    "sentence-transformers>=3.0",
+    "tavily-python>=0.5",
 ]
 
 # ── Optional / extra dependencies ──────────────────────────────────
@@ -33,6 +41,12 @@ dev = [
     "pytest-mock",
     "ruff",
 ]
+
+# ── Build targets ───────────────────────────────────────────────────
+# The distribution is named "my-project" but the importable package is
+# `leadqual`; point Hatchling at it explicitly so `pip install -e .` works.
+[tool.hatch.build.targets.wheel]
+packages = ["leadqual"]
 
 # ── Tool configuration ─────────────────────────────────────────────
 [tool.ruff]

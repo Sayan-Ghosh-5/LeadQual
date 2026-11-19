@@ -18,6 +18,14 @@ cp .env.example .env
 python -m leadqual qualify --company "Acme Health" --text-file sample.txt
 ```
 
+> **CPU-only machines:** the enrichment stack pulls in PyTorch. To avoid a multi-gigabyte CUDA
+> download, install the CPU build first, then the project:
+>
+> ```bash
+> pip install torch --index-url https://download.pytorch.org/whl/cpu
+> pip install -e ".[dev]"
+> ```
+
 ---
 
 ## Project Structure
@@ -54,7 +62,7 @@ LEADqual/
 
 ### Step 1: Project Foundation (`pyproject.toml`)
 
-- **What:** Created a PEP 621-compliant `pyproject.toml` with Hatchling as the build backend, core runtime dependencies, and optional dependency groups (`dev`, `openai`, `google`).
+- **What:** Created a PEP 621-compliant `pyproject.toml` with Hatchling as the build backend, core runtime dependencies, and optional dependency groups (`dev`, `openai`, `google`). Phase 2 adds persistence and retrieval dependencies — see [Phase 2 — Step 1](#phase-2--persistence--enrichment).
 - **Why:**
   - **Single source of truth:** Replaces the legacy mess of `setup.py`, `setup.cfg`, and `requirements.txt` with one declarative file.
   - **Hatchling:** Chosen over setuptools because it is lightweight, PEP 621-native, and requires zero boilerplate configuration.
@@ -140,6 +148,28 @@ LEADqual/
 
 ---
 
+## Phase 2 — Persistence & Enrichment
+
+### Step 1: New Dependencies (`pyproject.toml`)
+
+Phase 2 turns the one-shot CLI into a pipeline that stores leads and verdicts, gathers external evidence, and retrieves the most relevant evidence before asking the model to judge. That needs five additional runtime dependencies:
+
+| Package | Constraint | Why we need it |
+| :--- | :--- | :--- |
+| `sqlalchemy` | `>=2.0,<3.0` | Typed ORM/Core layer for leads, enrichment evidence, and verdicts. The 2.0 API gives us `Select`/`Session` typing and keeps us off the legacy 1.x patterns. |
+| `alembic` | `>=1.13` | Versioned schema migrations. Hand-edited `ALTER TABLE` scripts don't survive multiple environments; revisions give us upgrade *and* downgrade paths. |
+| `psycopg2-binary` | `>=2.9` | Postgres driver used by SQLAlchemy. The `-binary` wheel ships its own `libpq`, so installs work without `pg_config` or a local Postgres build toolchain. |
+| `sentence-transformers` | `>=3.0` | Local embedding model for evidence retrieval. Runs offline, so retrieval costs no API calls and adding it never sends lead text to a third party. |
+| `tavily-python` | `>=0.5` | Official client for Tavily search, used to gather external evidence (company site, funding, tech stack) that the raw lead text doesn't contain. |
+
+- **Sync SQLAlchemy, not async:** the pipeline is driven by CLI commands and batch scripts, not a web server. Sync sessions keep the code linear and debuggable, and we can revisit async if an API front end lands later.
+- **`psycopg2-binary` over `asyncpg`:** chosen for consistency with the sync decision above. If you later need a specific `libpq` (e.g., a managed Postgres with custom auth), swap to `psycopg2` and build against that library.
+- **Fixed lower bounds, open upper bounds:** we pin minimums (`>=2.0`) so features we rely on exist, and cap only at the next major (`<3.0`) so upstream breaking releases can't silently land in a fresh install.
+- **Heavy download, one caveat:** `sentence-transformers` pulls in PyTorch, which is the single biggest thing in the dependency tree. See the CPU-only install note in [Quick Start](#quick-start). If production images ever need to stay slim, this is the one dependency worth moving into its own `[embeddings]` extra.
+- **Packaging fix:** the distribution is still named `my-project` while the importable package is `leadqual`, so Hatchling could not infer the wheel contents. `[tool.hatch.build.targets.wheel] packages = ["leadqual"]` makes `pip install -e .` work as documented in Quick Start.
+
+---
+
 ## Key Design Decisions Summary
 
 | Decision | Choice | Rationale |
@@ -154,6 +184,9 @@ LEADqual/
 | **CLI framework** | `argparse` (stdlib) | Zero extra dependencies |
 | **Test strategy** | Mocked Groq client | Fast, free, deterministic, CI-safe |
 | **Build backend** | Hatchling | Lightweight, PEP 621-native |
+| **Persistence** | SQLAlchemy 2.0 (sync) + Postgres | Typed ORM, migrations via Alembic, no async complexity for CLI runs |
+| **Evidence retrieval** | `sentence-transformers` (local) | Offline embeddings — no per-query API cost, lead text stays local |
+| **Web evidence** | Tavily (`tavily-python`) | Purpose-built search API for enrichment facts the lead text lacks |
 
 ---
 

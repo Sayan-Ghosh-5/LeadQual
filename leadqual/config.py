@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",          # don't blow up on unexpected vars
     )
 
-    # ── Required ────────────────────────────────────────────────
+    DATABASE_URL: str
     MODEL_API_KEY: str            # no default → must be set in .env or env vars
 
     # ── Optional (sensible Groq defaults) ───────────────────────

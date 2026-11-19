@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 # ── Project metadata ────────────────────────────────────────────────
 [project]
-name = "my-project"
+name = "leadqual"
 version = "0.1.0"
 description = "A short description of the project."
 readme = "README.md"
@@ -19,6 +19,15 @@ dependencies = [
     "httpx",
     "pyyaml",
     "groq",
+    "pgvector>=0.3"
+
+    # Persistence (leads, enrichment runs, verdicts)
+    "sqlalchemy>=2.0,<3.0",
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
+    # Retrieval / enrichment
+    "sentence-transformers>=3.0",
+    "tavily-python>=0.5",
 ]
 
 # ── Optional / extra dependencies ──────────────────────────────────
@@ -33,6 +42,10 @@ dev = [
     "pytest-mock",
     "ruff",
 ]
+
+# ── Build targets ───────────────────────────────────────────────────
+[tool.hatch.build.targets.wheel]
+packages = ["leadqual"]
 
 # ── Tool configuration ─────────────────────────────────────────────
 [tool.ruff]

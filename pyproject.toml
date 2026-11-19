@@ -19,7 +19,7 @@ dependencies = [
     "httpx",
     "pyyaml",
     "groq",
-    "pgvector>=0.3"
+    "pgvector>=0.3",
 
     # Persistence (leads, enrichment runs, verdicts)
     "sqlalchemy>=2.0,<3.0",

@@ -23,7 +23,9 @@ from leadqual.storage.models import Base, Evidence, Lead
 def _compile_pg_insert_on_conflict_do_nothing_for_sqlite(element: Insert, compiler, **kw) -> str:
     """Allow testing PostgreSQL ON CONFLICT DO NOTHING semantics on SQLite in unit tests."""
     text = compiler.visit_insert(element, **kw)
-    if element._post_values_clause is not None or getattr(element, "_on_conflict_do_nothing", False):
+    if "ON CONFLICT" not in text and (
+        element._post_values_clause is not None or getattr(element, "_on_conflict_do_nothing", False)
+    ):
         return f"{text} ON CONFLICT DO NOTHING"
     return text
 

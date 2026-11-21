@@ -145,29 +145,6 @@ def score_lead_with_reranking(
     ranked = reranker.rank_evidence(lead, icp, candidates, top_k=top_k_for_llm)
     top_passages = [item.evidence for item in ranked]
 
-    # Temporarily pass only the top-ranked passages into scorer via prompt formatting
-    system_prompt, user_prompt = scorer._build_prompts(lead, icp, top_passages)
-    raw_output = scorer.provider.complete_json(
-        model=scorer.model,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-    )
-    from leadqual.qualification.scorer import QualificationParseError, _extract_json_object
-
-    payload = _extract_json_object(raw_output)
-    try:
-        assessment = QualificationAssessment(
-            lead_id=lead_id,
-            icp_name=icp.name,
-            model_used=scorer.model,
-            score=payload["score"],
-            verdict=payload["verdict"],
-            summary=payload["summary"],
-            matched_criteria=payload.get("matched_criteria", []),
-            missing_or_risk_signals=payload.get("missing_or_risk_signals", []),
-            cited_urls=payload.get("cited_urls", []),
-        )
-    except Exception as exc:
-        raise QualificationParseError(f"Invalid qualification fields: {exc}") from exc
-
+    # Pass only the top-ranked passages into scorer
+    assessment = scorer.score_passages(lead, icp, top_passages)
     return assessment, ranked

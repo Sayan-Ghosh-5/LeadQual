@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -37,6 +38,7 @@ class FetchedDocument(BaseModel):
     final_url: str
     status_code: int
     text: str = Field(..., min_length=1)
+    fetched_at: datetime = Field(default_factory=lambda: datetime.now(datetime.utc))
 
 
 def is_disallowed_ip(addr: str) -> bool:
@@ -163,6 +165,7 @@ class SafePageFetcher:
             follow_redirects=False,
             headers={"User-Agent": self.user_agent},
         )
+        
 
         try:
             redirects_followed = 0
@@ -190,11 +193,13 @@ class SafePageFetcher:
                         encoding = response.encoding or "utf-8"
                         html = raw_bytes.decode(encoding, errors="replace")
                         text = extract_main_text(html, url=current_url)
+                        fetched_at = datetime.now(timezone.utc)
                         return FetchedDocument(
                             url=url,
                             final_url=current_url,
                             status_code=response.status_code,
                             text=text,
+                            fetched_at=fetched_at,
                         )
                 except (UnsafeUrlError, FetchExecutionError, ContentExtractionError):
                     raise
